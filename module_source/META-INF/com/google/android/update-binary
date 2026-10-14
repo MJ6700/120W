@@ -1,0 +1,16 @@
+#!/sbin/sh
+#################
+# Magisk Module Flash Entry
+#################
+OUTFD=$2
+ZIPFILE=$3
+ASH_STANDALONE=1
+if [ -f /data/adb/magisk/busybox ]; then
+  exec /data/adb/magisk/busybox sh "$0" "$@"
+fi
+exec /system/bin/sh -c '
+MODDIR=/data/adb/modules/infinix_gt50pro_charge_boost
+mkdir -p "$MODDIR"
+unzip -o "$3" -d "$MODDIR"
+sh "$MODDIR/customize.sh"
+' dummy "$@"

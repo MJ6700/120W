@@ -1,0 +1,6 @@
+id=infinix_gt50pro_charge_boost
+name=Infinix GT 50 Pro Charging Unlocker
+version=v4.5.0-GT50PRO
+versionCode=450
+author=GT-Modders
+description=Modifies charging speed algorithms and thermal limits for Infinix Hot 60 Pro to match Infinix GT 50 Pro (12000mA HyperCharge, Transsion dual-pump, bypass gaming charge, and thermal throttling override).

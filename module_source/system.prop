@@ -1,0 +1,28 @@
+# =========================================================
+# INFINIX GT 50 PRO CHARGING & PERFORMANCE SPOOF PROFILE
+# =========================================================
+ro.product.model=Infinix GT 50 Pro
+ro.product.name=Infinix-X6711
+ro.product.device=Infinix-X6711
+ro.product.brand=Infinix
+ro.product.manufacturer=Infinix
+ro.transsion.device.series=GT
+ro.build.product=Infinix-X6711
+
+# Transsion Charging Engine & Protocol Flags
+persist.vendor.tran.fast_charge=1
+persist.vendor.charging.hyper=1
+persist.vendor.charging.boost=1
+persist.vendor.tran.charger.current=12000000
+persist.vendor.tran.charger.voltage=11000000
+ro.transsion.charge.type=hyper
+ro.transsion.bypass.charge.support=1
+persist.vendor.tran.bypass_charge=1
+
+# Disable Thermal Charging Throttling & Allow High Amperage
+persist.sys.thermal.mitigation=0
+persist.vendor.thermal.charge.limit=0
+vendor.battery.charging.limit=0
+ro.vendor.mtk_pump_express=5
+ro.vendor.mtk_pe_max_watt=120
+persist.sys.tran.charge.turbo=1

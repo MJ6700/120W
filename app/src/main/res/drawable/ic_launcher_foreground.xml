@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Cyber Hexagon Accent -->
+    <path
+        android:pathData="M54,23 L79,37 L79,71 L54,85 L29,71 L29,37 Z"
+        android:strokeColor="#3300E5FF"
+        android:strokeWidth="2.5"
+        android:fillColor="#1500E5FF" />
+
+    <!-- Corner Cyber Bracket Accents -->
+    <path
+        android:pathData="M35,33 L45,28 M73,33 L63,28 M35,75 L45,80 M73,75 L63,80"
+        android:strokeColor="#FF00E5FF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round" />
+
+    <!-- Main GT Mecha Lightning Bolt (Left/Back Half) -->
+    <path
+        android:pathData="M57,28 L37,56 L52,56 L47,80 L71,50 L56,50 Z"
+        android:strokeColor="#FFD84315"
+        android:strokeWidth="1.5">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="37"
+                android:startY="28"
+                android:endX="71"
+                android:endY="80"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#FFFF3D00" />
+                <item android:offset="0.5" android:color="#FFFF6D00" />
+                <item android:offset="1.0" android:color="#FFFFD600" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Lightning Facet Highlight (Right Half) -->
+    <path
+        android:pathData="M57,28 L51,46 L56,50 L71,50 Z"
+        android:fillColor="#FFFFEA00" />
+
+    <path
+        android:pathData="M48,64 L47,80 L58,66 Z"
+        android:fillColor="#FFFF8A65" />
+
+    <!-- Center Core Energy Flare -->
+    <path
+        android:pathData="M53,49 L55,47 L57,49 L55,51 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>

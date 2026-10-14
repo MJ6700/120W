@@ -1,0 +1,6 @@
+{
+  "name": "GT 50 Pro Charge Mod",
+  "description": "Infinix Hot 60 Pro to GT 50 Pro Hyper Charging Speed & Bypass Charging Module with real-time wattage telemetry and flashable Magisk/KernelSU ZIP generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

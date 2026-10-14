@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">GT 50 Pro Charge Mod</string>
+    <string name="device_source_label">Device Source</string>
+    <string name="target_profile_label">Target Profile</string>
+    <string name="charging_telemetry">Live Charging Telemetry</string>
+    <string name="hyper_charge_active">GT 50 Pro HyperCharge Active</string>
+    <string name="hyper_charge_desc">Thermal throttling bypassed • 12000mA max pump express</string>
+    <string name="bypass_charge_active">GT Bypass Charging Enabled</string>
+    <string name="bypass_charge_desc">Direct power to motherboard • 0% battery heat during gaming</string>
+    <string name="export_module_zip">Export Magisk / KernelSU Module (.zip)</string>
+    <string name="apply_root_mod">Apply GT 50 Pro Charging (Root)</string>
+    <string name="module_applied_success">GT 50 Pro Charging profile injected successfully!</string>
+    <string name="module_copied_adb">ADB Shell commands copied to clipboard!</string>
+    <string name="thermal_guard_label">Active Thermal Guard (45°C Failsafe)</string>
+</resources>
