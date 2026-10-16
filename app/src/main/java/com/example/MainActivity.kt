@@ -17,6 +17,11 @@ import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.provider.Settings
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -28,10 +33,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +47,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,12 +55,14 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,6 +90,14 @@ private const val ONE_STI_URL = "https://one.sti.edu/"
 private const val PREFS_NAME = "one_sti_state"
 private const val KEY_LAST_URL = "last_url"
 private const val KEY_SCROLL_Y = "scroll_y"
+
+// Helper to check if device has active internet connectivity
+private fun isNetworkAvailable(context: Context): Boolean {
+  val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+  val network = cm.activeNetwork ?: return false
+  val capabilities = cm.getNetworkCapabilities(network) ?: return false
+  return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+}
 
 // Helper to detect any logout, sign-out, or session-termination URLs
 private fun isLogoutUrl(url: String?): Boolean {
@@ -262,8 +280,12 @@ class MainActivity : ComponentActivity() {
       cookieManager.setAcceptCookie(true)
     } catch (_: Exception) {}
 
-    // Pre-warm and start loading ONE STI immediately with zero delay
+    // Check initial network state to load cache if offline
+    val online = isNetworkAvailable(this)
     val prewarmedWebView = createConfiguredWebView(this).apply {
+      if (!online) {
+        settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+      }
       loadUrl(ONE_STI_URL)
     }
     activeWebView = prewarmedWebView
@@ -381,8 +403,45 @@ fun OneStiApp(
 ) {
   val context = LocalContext.current
   var webViewInstance by remember { mutableStateOf<WebView?>(existingWebView) }
+  var isOnline by remember { mutableStateOf(isNetworkAvailable(context)) }
+  var isOfflineMode by remember { mutableStateOf(!isOnline) }
   var hasError by remember { mutableStateOf(false) }
   var errorMessage by remember { mutableStateOf("") }
+
+  // Monitor real-time network connectivity changes
+  DisposableEffect(context) {
+    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    val request = NetworkRequest.Builder()
+      .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+      .build()
+    val callback = object : ConnectivityManager.NetworkCallback() {
+      override fun onAvailable(network: Network) {
+        (context as? Activity)?.runOnUiThread {
+          isOnline = true
+          if (hasError) {
+            hasError = false
+            webViewInstance?.settings?.cacheMode = WebSettings.LOAD_DEFAULT
+            webViewInstance?.reload()
+          }
+        }
+      }
+
+      override fun onLost(network: Network) {
+        (context as? Activity)?.runOnUiThread {
+          isOnline = false
+        }
+      }
+    }
+    try {
+      cm?.registerNetworkCallback(request, callback)
+    } catch (_: Exception) {}
+
+    onDispose {
+      try {
+        cm?.unregisterNetworkCallback(callback)
+      } catch (_: Exception) {}
+    }
+  }
 
   // Periodic cookie protection & keep-alive every 30s to permanently preserve authentication
   LaunchedEffect(Unit) {
@@ -402,8 +461,10 @@ fun OneStiApp(
     val wv = webViewInstance
     when {
       hasError -> {
-        hasError = false
-        wv?.reload()
+        (context as? Activity)?.finish()
+      }
+      isOfflineMode && wv != null && wv.canGoBack() -> {
+        wv.goBack()
       }
       wv != null && wv.canGoBack() -> {
         wv.goBack()
@@ -422,93 +483,240 @@ fun OneStiApp(
         .fillMaxSize()
         .padding(innerPadding)
     ) {
-      OneStiWebViewContainer(
-        existingWebView = webViewInstance ?: existingWebView,
-        onWebViewCreated = { wv ->
-          webViewInstance = wv
-          onWebViewBound(wv)
-        },
-        onPageFinished = {
-          hasError = false
-        },
-        onError = { err ->
-          hasError = true
-          errorMessage = err
-        },
-        modifier = Modifier
-          .fillMaxSize()
-          .testTag("one_sti_webview")
-      )
+      Column(modifier = Modifier.fillMaxSize()) {
+        // Offline Mode Banner when browsing cached content
+        if (isOfflineMode) {
+          Surface(
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(horizontal = 16.dp, vertical = 6.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFFFEF3C7),
+            border = BorderStroke(1.dp, Color(0xFFFDE68A)),
+            shadowElevation = 2.dp
+          ) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+              ) {
+                Icon(
+                  painter = painterResource(R.drawable.ic_cloud_off),
+                  contentDescription = null,
+                  tint = Color(0xFFB45309),
+                  modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                  Text(
+                    text = stringResource(R.string.offline_mode_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF92400E)
+                  )
+                  Text(
+                    text = stringResource(R.string.offline_banner),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFB45309)
+                  )
+                }
+              }
+              TextButton(
+                onClick = {
+                  if (isNetworkAvailable(context)) {
+                    isOfflineMode = false
+                    hasError = false
+                    webViewInstance?.settings?.cacheMode = WebSettings.LOAD_DEFAULT
+                    webViewInstance?.reload()
+                    Toast.makeText(context, context.getString(R.string.connection_restored), Toast.LENGTH_SHORT).show()
+                  } else {
+                    Toast.makeText(context, "No active internet connection yet", Toast.LENGTH_SHORT).show()
+                  }
+                }
+              ) {
+                Text(
+                  text = stringResource(R.string.go_online),
+                  fontWeight = FontWeight.Bold,
+                  color = StiBlue
+                )
+              }
+            }
+          }
+        }
 
-      // Connection error screen
-      if (hasError) {
+        OneStiWebViewContainer(
+          existingWebView = webViewInstance ?: existingWebView,
+          onWebViewCreated = { wv ->
+            webViewInstance = wv
+            onWebViewBound(wv)
+          },
+          onPageFinished = {
+            hasError = false
+          },
+          onError = { err ->
+            if (!isOfflineMode) {
+              hasError = true
+              errorMessage = err
+            }
+          },
+          modifier = Modifier
+            .fillMaxSize()
+            .weight(1f)
+            .testTag("one_sti_webview")
+        )
+      }
+
+      // No Internet Connection UI Screen
+      if (hasError && !isOfflineMode) {
         Surface(
           modifier = Modifier
             .fillMaxSize()
-            .testTag("error_container"),
+            .testTag("no_internet_screen"),
           color = MaterialTheme.colorScheme.background
         ) {
           Column(
             modifier = Modifier
               .fillMaxSize()
-              .padding(horizontal = 32.dp, vertical = 24.dp),
+              .padding(horizontal = 28.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             Box(
               modifier = Modifier
-                .size(80.dp)
+                .size(96.dp)
                 .clip(CircleShape)
-                .background(StiBlue.copy(alpha = 0.12f)),
+                .background(StiBlue.copy(alpha = 0.10f)),
               contentAlignment = Alignment.Center
             ) {
               Icon(
-                imageVector = Icons.Default.Warning,
+                painter = painterResource(R.drawable.ic_wifi_off),
                 contentDescription = stringResource(R.string.no_internet_title),
                 tint = StiBlue,
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(48.dp)
               )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
               text = stringResource(R.string.no_internet_title),
-              style = MaterialTheme.typography.titleLarge,
+              style = MaterialTheme.typography.headlineSmall,
               fontWeight = FontWeight.Bold,
               color = StiBlue,
               textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
-              text = if (errorMessage.isNotBlank()) errorMessage else stringResource(R.string.no_internet_desc),
+              text = if (errorMessage.isNotBlank() && errorMessage.contains("Unable")) errorMessage else stringResource(R.string.no_internet_desc),
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
-              textAlign = TextAlign.Center
+              textAlign = TextAlign.Center,
+              modifier = Modifier.padding(horizontal = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Action 1: Retry Connection
             Button(
               onClick = {
-                hasError = false
-                webViewInstance?.reload()
+                if (isNetworkAvailable(context)) {
+                  hasError = false
+                  isOfflineMode = false
+                  webViewInstance?.settings?.cacheMode = WebSettings.LOAD_DEFAULT
+                  webViewInstance?.reload()
+                } else {
+                  hasError = true
+                  Toast.makeText(context, "No connection detected. Please check network.", Toast.LENGTH_SHORT).show()
+                  webViewInstance?.reload()
+                }
               },
               colors = ButtonDefaults.buttonColors(
                 containerColor = StiBlue,
                 contentColor = Color.White
               ),
-              shape = RoundedCornerShape(12.dp),
+              shape = RoundedCornerShape(14.dp),
               modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(50.dp)
                 .testTag("error_retry_button")
             ) {
               Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
               Spacer(modifier = Modifier.size(8.dp))
-              Text(stringResource(R.string.retry_connection))
+              Text(
+                text = stringResource(R.string.retry_connection),
+                fontWeight = FontWeight.Bold
+              )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action 2: View Cached Content (Offline Mode)
+            OutlinedButton(
+              onClick = {
+                isOfflineMode = true
+                hasError = false
+                webViewInstance?.apply {
+                  settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                  val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                  val lastUrl = prefs.getString(KEY_LAST_URL, null)
+                  loadUrl(if (isSavablePortalUrl(lastUrl)) lastUrl!! else ONE_STI_URL)
+                }
+                Toast.makeText(context, context.getString(R.string.offline_banner), Toast.LENGTH_SHORT).show()
+              },
+              colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = StiBlue
+              ),
+              border = BorderStroke(1.5.dp, StiBlue),
+              shape = RoundedCornerShape(14.dp),
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .testTag("view_cached_button")
+            ) {
+              Icon(
+                painter = painterResource(R.drawable.ic_cloud_off),
+                contentDescription = null,
+                tint = StiBlue,
+                modifier = Modifier.size(18.dp)
+              )
+              Spacer(modifier = Modifier.size(8.dp))
+              Text(
+                text = stringResource(R.string.view_cached_portal),
+                fontWeight = FontWeight.Bold
+              )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action 3: Open Network Settings
+            TextButton(
+              onClick = {
+                try {
+                  context.startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS))
+                } catch (_: Exception) {
+                  try {
+                    context.startActivity(Intent(Settings.ACTION_SETTINGS))
+                  } catch (_: Exception) {}
+                }
+              },
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp)
+                .testTag("network_settings_button")
+            ) {
+              Text(
+                text = stringResource(R.string.network_settings),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.SemiBold
+              )
             }
           }
         }

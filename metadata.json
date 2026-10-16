@@ -1,6 +1,6 @@
 {
-  "name": "GT 50 Pro Charge Mod",
-  "description": "Infinix Hot 60 Pro to GT 50 Pro Hyper Charging Speed & Bypass Charging Module with real-time wattage telemetry and flashable Magisk/KernelSU ZIP generator.",
+  "name": "One STI",
+  "description": "The ONE STI Student Portal app for STI College students and faculty with offline mode and permanent login.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

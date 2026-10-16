@@ -1,15 +1,16 @@
 <resources>
-    <string name="app_name">GT 50 Pro Charge Mod</string>
-    <string name="device_source_label">Device Source</string>
-    <string name="target_profile_label">Target Profile</string>
-    <string name="charging_telemetry">Live Charging Telemetry</string>
-    <string name="hyper_charge_active">GT 50 Pro HyperCharge Active</string>
-    <string name="hyper_charge_desc">Thermal throttling bypassed • 12000mA max pump express</string>
-    <string name="bypass_charge_active">GT Bypass Charging Enabled</string>
-    <string name="bypass_charge_desc">Direct power to motherboard • 0% battery heat during gaming</string>
-    <string name="export_module_zip">Export Magisk / KernelSU Module (.zip)</string>
-    <string name="apply_root_mod">Apply GT 50 Pro Charging (Root)</string>
-    <string name="module_applied_success">GT 50 Pro Charging profile injected successfully!</string>
-    <string name="module_copied_adb">ADB Shell commands copied to clipboard!</string>
-    <string name="thermal_guard_label">Active Thermal Guard (45°C Failsafe)</string>
+    <string name="app_name">One STI</string>
+    <string name="no_internet_title">No Internet Connection</string>
+    <string name="no_internet_desc">Unable to reach the ONE STI Student Portal. Check your network or browse cached pages in Offline Mode.</string>
+    <string name="retry_connection">Retry Connection</string>
+    <string name="network_settings">Network Settings</string>
+    <string name="view_cached_portal">View Cached Content</string>
+    <string name="offline_banner">Offline Mode • Displaying cached content</string>
+    <string name="offline_mode_title">Offline Mode</string>
+    <string name="offline_mode_desc">You are viewing cached portal data without an active internet connection.</string>
+    <string name="go_online">Go Online</string>
+    <string name="connection_restored">Connected • Portal synced</string>
+    <string name="biometric_prompt_title">One STI Security</string>
+    <string name="biometric_unlock_button">Unlock Portal</string>
+    <string name="biometric_settings_title">Biometric Protection</string>
 </resources>
